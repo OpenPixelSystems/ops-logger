@@ -1,4 +1,4 @@
-loggersrc = ['logger.c', 'queue.c']
+loggersrc = [files('logger.c', 'queue.c')]
 thread_dep = dependency('threads')
 
 loggerlib = shared_library(
