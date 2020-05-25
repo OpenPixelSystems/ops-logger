@@ -1,5 +1,5 @@
 /**
- * @file logger.c
+ * @file util-logger.c
  * @brief  Simple logger implementation
  * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
  * @version v2.0
@@ -16,7 +16,9 @@
 #define LOGGER_MAX_MSG_LEN 2048
 #define LOGGER_MAX_LOGFILE_NAME 64
 
-static int _current_loglvl = LOG_LVL_DEBUGGING;
+static long _log_counter = 0;
+
+static int _current_loglvl = LOG_LVL_EXTRA;
 
 static bool _is_threaded = false;
 static bool _thread_started = false;
@@ -51,7 +53,7 @@ static struct log_level_t _log_levels[] = {
 	{ LOG_LVL_WARN,	   "WARN",  YELLOW,  0 },
 	{ LOG_LVL_ERROR,   "ERROR", RED,     0 },
 	{ LOG_LVL_DEBUG,   "DEBUG", MAGENTA, 0 },
-	{ LOG_LVL_OK,	   "OK",    GREEN,   0 },
+	{ LOG_LVL_OK,	   "OKAY",  GREEN,   0 },
 	{ LOG_LVL_TRACING, "TRACE", CYAN,    0 },
 };
 
@@ -90,12 +92,12 @@ static int _build_msg_prefix(struct log_message_t *msg, const char *file, const 
 		struct tm tm = *localtime(&t);
 
 		snprintf(msg->prefix, LOGGER_MAX_PREFIX_LEN,
-			 "[%d-%.2d-%.2d %.2d:%.2d:%.2d][%.16s][%7.7s]: [%.25s: %.30s: %4u]: ",
+			 "[%d-%.2d-%.2d %.2d:%.2d:%.2d][%10.10s][%5.5s][%.25s: %.30s: %4u]: ",
 			 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
 			 msg->thread, _log_levels[msg->log_lvl_id].name, file, function, line);
 	} else {
 		snprintf(msg->prefix, LOGGER_MAX_PREFIX_LEN,
-			 "[%.16s][%s%7.7s%s]: [%15.15s: %30.30s: %4u]: ",
+			 "[%10.10s][%s%5.5s%s][%15.15s: %30.30s: %4u]: ",
 			 msg->thread, _log_levels[msg->log_lvl_id].color,
 			 _log_levels[msg->log_lvl_id].name, RESET, file, function, line);
 	}
@@ -166,7 +168,7 @@ void _logger_flush_queue()
 }
 
 #define B_TO_MB (1024 * 1000)
-bool _check_and_perform_log_rotate(FILE *fp, bool is_errorlog)
+int _check_and_perform_log_rotate(FILE *fp, bool is_errorlog)
 {
 	if (!fp || !_logfile_enabled) {
 		return -1;
@@ -200,7 +202,7 @@ bool _check_and_perform_log_rotate(FILE *fp, bool is_errorlog)
 			if (error < 0) {
 				LOG_ERROR("Failed to remove old backup file");
 				pthread_mutex_unlock(&_rotated_lock);
-				return false;
+				return -1;
 			}
 		}
 
@@ -208,15 +210,15 @@ bool _check_and_perform_log_rotate(FILE *fp, bool is_errorlog)
 		if (error < 0) {
 			LOG_ERROR("Failed to move backup file!");
 			pthread_mutex_unlock(&_rotated_lock);
-			return false;
+			return -1;
 		}
 
 		logger_enable_file_logging(_logfile_name);
 		pthread_mutex_unlock(&_rotated_lock);
 
-		return true;
+		return 1;
 	}
-	return false;
+	return 0;
 }
 
 void *_logger_internal_thread(void *data)
@@ -240,13 +242,16 @@ void *_logger_internal_thread(void *data)
 
 void logger_log_line(int log_lvl_mask, char *file, const char *function, const unsigned int line, char *format, ...)
 {
+	struct log_message_t *msg = NULL;
 	va_list va;
 
-	va_start(va, format);
+	if (!(log_lvl_mask & _current_loglvl)) {
+		goto error;
+	}
 
-	struct log_message_t *msg = malloc(sizeof(struct log_message_t));
+	msg = malloc(sizeof(struct log_message_t));
 	if (!msg) {
-		return;
+		goto error;
 	}
 
 	msg->log_lvl_id = _mask2id(log_lvl_mask);
@@ -255,15 +260,28 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 	char *canon_file = basename(file);
 	if (!canon_file) {
 		free(msg);
-		return;
+		goto error;
 	}
 
-	_build_msg_prefix(msg, canon_file, function, line, false);
-	_build_msg_string(msg, format, va);
+
+	int error = _build_msg_prefix(msg, canon_file, function, line, false);
+	if (error < 0) {
+		goto error;
+	}
+
+	va_start(va, format);
+	error = _build_msg_string(msg, format, va);
+	if (error < 0) {
+		goto error;
+	}
+	va_end(va);
 
 	if (_check_msg_for_filter(msg)) {
 		if (_is_threaded) {
-			queue_push(_logger_queue, (void *)msg);
+			error = queue_push(_logger_queue, (void *)msg);
+			if (error < 0) {
+				goto error;
+			}
 		} else {
 			_logger_print_and_free_msg(msg);
 		}
@@ -272,10 +290,18 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 	}
 
 	if (_logfile_enabled) {
-		_check_and_perform_log_rotate(_logfile, false);
+		error = _check_and_perform_log_rotate(_logfile, false);
+		if (error < 0) {
+			LOG_ERROR("Log rotate failed!");
+			goto file_end;
+		}
 
 #ifdef CFG_LOGGER_SPLIT_ERROR_LOGS
 		_check_and_perform_log_rotate(_errorfile, true);
+		if (error < 0) {
+			LOG_ERROR("Error log rotate failed!");
+			goto file_end;
+		}
 #endif /*CFG_LOGGER_SPLIT_ERROR_LOGS */
 
 		struct log_message_t file_msg = { 0 };
@@ -283,34 +309,52 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 		file_msg.log_lvl_id = _mask2id(log_lvl_mask);
 		file_msg.log_lvl_mask = log_lvl_mask;
 
-		_build_msg_prefix(&file_msg, canon_file, function, line, true);
-		_build_msg_string(&file_msg, format, va);
+		error = _build_msg_prefix(&file_msg, canon_file, function, line, true);
+		if (error < 0) {
+			LOG_ERROR("Failed to build file prefix");
+			goto file_end;
+		}
+
+		va_start(va, format);
+		error = _build_msg_string(&file_msg, format, va);
+		if (error < 0) {
+			LOG_ERROR("Failed to build file msg");
+			goto file_end;
+		}
+		va_end(va);
 
 		pthread_mutex_lock(&_rotated_lock);
 		if (_logfile) {
+			fprintf(_logfile, "%ld - ", _log_counter);
 			fprintf(_logfile, "%s", file_msg.prefix);
 			fprintf(_logfile, "%s\n", file_msg.msg);
 		}
 #ifdef CFG_LOGGER_SPLIT_ERROR_LOGS
 		if ((file_msg.log_lvl_mask & LOG_LVL_WARN) || file_msg.log_lvl_mask & LOG_LVL_ERROR) {
 			if (_errorfile) {
+				fprintf(_errorfile, "%ld", _log_counter);
 				fprintf(_errorfile, "%s", file_msg.prefix);
 				fprintf(_errorfile, "%s\n", file_msg.msg);
 			}
 		}
 #endif /* CFG_LOGGER_SPLIT_ERROR_LOGS */
 		pthread_mutex_unlock(&_rotated_lock);
-
+file_end:
 		if (file_msg.prefix) {
 			free(file_msg.prefix);
 		}
 		if (file_msg.msg) {
 			free(file_msg.msg);
 		}
+		_log_counter++;
 	}
 	va_end(va);
-
 	_log_levels[_mask2id(log_lvl_mask)].counter++;
+	return;
+
+error:
+	va_end(va);
+	_cleanup_log_msg(msg);
 }
 
 int logger_enable_file_logging(const char *filename)
@@ -363,14 +407,17 @@ int logger_enable_threaded_mode()
 		LOG_ERROR("Failed to create queue");
 		return -1;
 	}
+
 	int error = pthread_create(&_logger_thread, NULL, _logger_internal_thread, NULL);
 	if (error < 0) {
 		LOG_ERROR("Failed to create thread");
 		return -1;
 	}
+
 	while (!_thread_started) {
 		usleep(100);
 	}
+
 	return 0;
 }
 
@@ -443,8 +490,19 @@ void logger_set_loglevel(int loglvl)
 int logger_init()
 {
 	// Something something thread something
-	logger_enable_file_logging("./system-log");
-	logger_enable_threaded_mode();
+	int error = logger_enable_threaded_mode();
+
+	if (error < 0) {
+		return -1;
+	}
+
+#ifdef CFG_LOGGER_DEFAULT_LOGFILE_ENABLED
+	error = logger_enable_file_logging("./system-log");
+	if (error < 0) {
+		return -1;
+	}
+#endif /* CFG_LOGGER_DEFAULT_LOGFILE_ENABLED */
+
 	return 0;
 }
 

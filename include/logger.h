@@ -20,21 +20,24 @@
 
 #include "colors.h"
 
-#define LOG_LVL_INFO 		0x00000001         //!< Info
-#define LOG_LVL_WARN 		0x00000002         //!< Warning
-#define LOG_LVL_ERROR 		0x00000004        //!< Error
-#define LOG_LVL_DEBUG 		0x00000008        //!< Debugging
-#define LOG_LVL_OK 		0x00000010           //!< Success
-#define LOG_LVL_TRACING 	0x00000020      //!< Tracing
+#define LOG_LVL_INFO            0x00000001      //!< Info
+#define LOG_LVL_WARN            0x00000002      //!< Warning
+#define LOG_LVL_ERROR           0x00000004      //!< Error
+#define LOG_LVL_DEBUG           0x00000008      //!< Debugging
+#define LOG_LVL_OK              0x00000010      //!< Success
+#define LOG_LVL_TRACING         0x00000020      //!< Tracing
 
-/** All Logging */
+/** All standard Logging */
 #define LOG_LVL_ALL (LOG_LVL_INFO | LOG_LVL_WARN | LOG_LVL_ERROR | LOG_LVL_OK)
 
-/** Extra debugging information */
-#define LOG_LVL_DEBUGGING (LOG_LVL_ALL | LOG_LVL_DEBUG | LOG_LVL_TRACING)
-
 /** Acceptable level of logging for production software */
-#define LOG_LVL_PRODUCTION (LOG_LVL_WARN | LOG_LVL_ERROR)
+#define LOG_LVL_PRODUCTION (LOG_LVL_OK | LOG_LVL_WARN | LOG_LVL_ERROR)
+
+/** Extra debugging information */
+#define LOG_LVL_EXTRA (LOG_LVL_ALL | LOG_LVL_DEBUG | LOG_LVL_TRACING)
+
+/** No logging at all! */
+#define LOG_LVL_NONE 0
 
 #ifndef CFG_LOGGER_MAX_LOG_SIZE
 #define CFG_LOGGER_MAX_LOG_SIZE 20 /* MB */
@@ -75,14 +78,12 @@ void logger_disable_file_logging();
 
 /**
  * @brief Enable/Disable threaded logging
- * @param value True=Enabled, False=Disabled
  * @returns -1 if failed , 0 if successful
  */
 int logger_enable_threaded_mode();
 
 /**
  * @brief Enable/Disable threaded logging
- * @param value True=Enabled, False=Disabled
  * @returns -1 if failed , 0 if successful
  */
 void logger_disable_threaded_mode();
@@ -128,6 +129,6 @@ void logger_print_stats(void);
  * @brief Get number of message for a specific level
  * @param loglvl Level that will be set
  */
-int logger_get_message_count(int loglvl);
+int logger_get_nb_message_loglevel(int loglvl);
 
 #endif
