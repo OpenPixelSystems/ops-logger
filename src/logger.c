@@ -9,16 +9,13 @@
 #include "logger.h"
 #include "logger-wrapper.h"
 
-#include "queue.h"
-
-#define LOGGER_MAX_THREAD_NAME 16
-#define LOGGER_MAX_PREFIX_LEN 128
-#define LOGGER_MAX_MSG_LEN 2048
-#define LOGGER_MAX_LOGFILE_NAME 64
 
 static long _log_counter = 0;
-
 static int _current_loglvl = LOG_LVL_EXTRA;
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
+
+#include "queue.h"
 
 static bool _is_threaded = false;
 static bool _thread_started = false;
@@ -37,8 +34,9 @@ static char _logfile_name[LOGGER_MAX_LOGFILE_NAME];
 static FILE *_errorfile = NULL;
 #endif /* CFG_LOGGER_SPLIT_ERROR_LOGS */
 
-static char *_current_filter;
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
+static char *_current_filter;
 
 struct log_message_t {
 	int	log_lvl_id;
@@ -86,6 +84,7 @@ static int _build_msg_prefix(struct log_message_t *msg, const char *file, const 
 		return -1;
 	}
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	pthread_getname_np(pthread_self(), msg->thread, LOGGER_MAX_THREAD_NAME);
 	if (for_file) {
 		time_t t = time(NULL);
@@ -96,11 +95,14 @@ static int _build_msg_prefix(struct log_message_t *msg, const char *file, const 
 			 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
 			 msg->thread, _log_levels[msg->log_lvl_id].name, file, function, line);
 	} else {
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 		snprintf(msg->prefix, LOGGER_MAX_PREFIX_LEN,
 			 "[%10.10s][%s%5.5s%s][%15.15s: %30.30s: %4u]: ",
 			 msg->thread, _log_levels[msg->log_lvl_id].color,
 			 _log_levels[msg->log_lvl_id].name, RESET, file, function, line);
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	}
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 	return 0;
 }
 
@@ -151,6 +153,7 @@ void _logger_print_and_free_msg(struct log_message_t *msg)
 	_cleanup_log_msg(msg);
 }
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 void _logger_flush_queue()
 {
 	if (!_logger_queue) {
@@ -239,6 +242,7 @@ void *_logger_internal_thread(void *data)
 	_logger_flush_queue();
 	return NULL;
 }
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 void logger_log_line(int log_lvl_mask, char *file, const char *function, const unsigned int line, char *format, ...)
 {
@@ -277,18 +281,23 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 	va_end(va);
 
 	if (_check_msg_for_filter(msg)) {
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 		if (_is_threaded) {
 			error = queue_push(_logger_queue, (void *)msg);
 			if (error < 0) {
 				goto error;
 			}
 		} else {
+#endif
 			_logger_print_and_free_msg(msg);
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 		}
+#endif
 	} else {
 		_cleanup_log_msg(msg);
 	}
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	if (_logfile_enabled) {
 		error = _check_and_perform_log_rotate(_logfile, false);
 		if (error < 0) {
@@ -348,6 +357,7 @@ file_end:
 		}
 		_log_counter++;
 	}
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 	va_end(va);
 	_log_levels[_mask2id(log_lvl_mask)].counter++;
 	return;
@@ -356,6 +366,8 @@ error:
 	va_end(va);
 	_cleanup_log_msg(msg);
 }
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 
 int logger_enable_file_logging(const char *filename)
 {
@@ -434,6 +446,7 @@ void logger_disable_threaded_mode()
 	}
 	LOG_INFO("Ended logger thread");
 }
+#endif /*CFG_LOGGER_DEEP_EMBEDDED */
 
 #define MAX_FILTER_LEN 50 //!< Arbitrary filter length
 int logger_enable_log_filter(char *filter)
@@ -489,7 +502,7 @@ void logger_set_loglevel(int loglvl)
 
 int logger_init()
 {
-	// Something something thread something
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	int error = logger_enable_threaded_mode();
 
 	if (error < 0) {
@@ -502,14 +515,17 @@ int logger_init()
 		return -1;
 	}
 #endif /* CFG_LOGGER_DEFAULT_LOGFILE_ENABLED */
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 	return 0;
 }
 
 void logger_exit()
 {
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	logger_disable_threaded_mode();
 	logger_disable_file_logging();
+#endif
 	logger_disable_log_filter();
 }
 

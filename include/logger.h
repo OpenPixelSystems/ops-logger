@@ -13,10 +13,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <string.h>
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 #include <pthread.h>
 #include <sys/stat.h>
 
 #include <libgen.h>             /* basename() */
+#endif
 
 #include "colors.h"
 
@@ -39,9 +43,19 @@
 /** No logging at all! */
 #define LOG_LVL_NONE 0
 
+#define LOGGER_MAX_THREAD_NAME 16
+#define LOGGER_MAX_LOGFILE_NAME 64
+#define LOGGER_MAX_PREFIX_LEN 128
+
 #ifndef CFG_LOGGER_MAX_LOG_SIZE
 #define CFG_LOGGER_MAX_LOG_SIZE 20 /* MB */
 #endif
+
+#ifdef CFG_LOGGER_NO_MALLOC
+#define LOGGER_MAX_MSG_LEN 128
+#else
+#define LOGGER_MAX_MSG_LEN 2048
+#endif /* CFG_LOGGER_NO_MALLOC */
 
 /**
  * @brief  Log level definition

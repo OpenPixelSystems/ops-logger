@@ -5,6 +5,7 @@
 
 int main(int argc, char **argv)
 {
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	LOG_DEBUG("Test");
 	LOG_INFO("Test");
 	LOG_ERROR("Test");
@@ -57,7 +58,7 @@ int main(int argc, char **argv)
 	/* } */
 
 	logger_exit();
-
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 	return 0;
 
 
