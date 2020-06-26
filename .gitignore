@@ -4,3 +4,4 @@ build
 *.err
 *.log
 *.swp
+cortex-build

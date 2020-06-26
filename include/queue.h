@@ -12,7 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 #include <pthread.h>
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
+
 
 #include "logger-wrapper.h"
 
@@ -44,7 +48,9 @@ struct queue_t {
 	struct queue_elm_t *	head;           //!< Ptr to ::queue_elm_t:: that's the head of the queue
 	struct queue_elm_t *	tail;           //!< Ptr to ::queue_elm_t:: that's the tail of the queue
 	queue_destroy_t		destroy;        //!< Callback for deleting data
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	pthread_mutex_t		mutex;          //!< Mutex to protect the queue
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 };
 
 /** Retrieve the size of a given queue */

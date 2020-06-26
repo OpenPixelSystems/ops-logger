@@ -59,7 +59,5 @@ int main(int argc, char **argv)
 
 	logger_exit();
 #endif /* CFG_LOGGER_DEEP_EMBEDDED */
-	return 0;
-
 
 }
