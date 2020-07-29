@@ -21,7 +21,7 @@ cpu_model  = 'stm32f76x'
 cross_args = [
 	'-mcpu=cortex-m7',
 	'-std=gnu11',
-	'-g3',
+	'-Os',
 	'-c',
 	'-ffunction-sections',
 	'-fdata-sections',
@@ -47,8 +47,6 @@ cross_link_args = [
 	'-ffunction-sections',
 	'-fdata-sections',
 	'-Wl,--start-group',
-	'-lc',
-	'-lm',
 	'-Wl,--end-group',
 	'--specs=nano.specs',
 	'-flto']

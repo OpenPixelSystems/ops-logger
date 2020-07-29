@@ -1,8 +1,9 @@
-loggersrc = [files('logger.c', 'queue.c')]
+loggersrc = [files('logger.c')]
 
 deps = []
 if meson.is_cross_build() == false
-deps += dependency('threads')
+  loggersrc += [files('queue.c')]
+  deps += dependency('threads')
 endif
 
 
