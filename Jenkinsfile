@@ -10,7 +10,7 @@ pipeline {
         }
         stage('Cross-Build') {
             steps {
-                sh "meson -C .stm32f76x-cross.build cortex-build"
+                sh "meson --cross-file .stm32f76x-cross.build cortex-build"
                 sh "ninja -C cortex-build"
             }
         }
