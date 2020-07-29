@@ -8,6 +8,12 @@ pipeline {
                 sh "ninja -C build"
             }
         }
+        stage('Cross-Build') {
+            steps {
+                sh "meson -C .stm32f76x-cross.build cortex-build"
+                sh "ninja -C cortex-build"
+            }
+        }
         stage('Test') {
             steps {
                 sh "ninja -C build test"
