@@ -27,7 +27,10 @@ int queue_push(struct queue_t *q, void *data)
 	}
 	memset(new, 0, sizeof(struct queue_elm_t));
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	pthread_mutex_lock(&q->mutex);
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
+
 	new->data = data;
 
 	if (q->n_elements == 0) {
@@ -42,7 +45,9 @@ int queue_push(struct queue_t *q, void *data)
 	}
 	q->n_elements++;
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	pthread_mutex_unlock(&q->mutex);
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 	return 0;
 }
@@ -55,10 +60,14 @@ int queue_pop(struct queue_t *q, void **data)
 		return -1;
 	}
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	pthread_mutex_lock(&q->mutex);
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 	if (q->n_elements == 0) {
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 		pthread_mutex_unlock(&q->mutex);
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 		return -1;
 	}
 
@@ -83,7 +92,9 @@ int queue_pop(struct queue_t *q, void **data)
 	*data = tmp->data;
 	free(tmp);
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	pthread_mutex_unlock(&q->mutex);
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 	return 0;
 }

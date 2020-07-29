@@ -9,16 +9,21 @@
 #include "logger.h"
 #include "logger-wrapper.h"
 
-#include "queue.h"
-
-#define LOGGER_MAX_THREAD_NAME 16
-#define LOGGER_MAX_PREFIX_LEN 128
-#define LOGGER_MAX_MSG_LEN 2048
-#define LOGGER_MAX_LOGFILE_NAME 64
 
 static long _log_counter = 0;
-
 static int _current_loglvl = LOG_LVL_EXTRA;
+
+struct log_message_t {
+	int	log_lvl_id;
+	int	log_lvl_mask;
+	char	thread[LOGGER_MAX_THREAD_NAME];
+	char *	prefix;
+	char *	msg;
+};
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
+
+#include "queue.h"
 
 static bool _is_threaded = false;
 static bool _thread_started = false;
@@ -33,20 +38,24 @@ static struct  queue_t *_logger_queue;
 static FILE *_logfile = NULL;
 static char _logfile_name[LOGGER_MAX_LOGFILE_NAME];
 
+static char *_current_filter;
+#define PREFIX_FMT "[%10.10s][%s%5.5s%s][%15.15s: %30.30s: %4u]: "
+
 #ifdef CFG_LOGGER_SPLIT_ERROR_LOGS
 static FILE *_errorfile = NULL;
 #endif /* CFG_LOGGER_SPLIT_ERROR_LOGS */
+#else
+static char _msg_prefix[LOGGER_MAX_PREFIX_LEN];
+static char _msg[LOGGER_MAX_PREFIX_LEN];
 
-static char *_current_filter;
-
-
-struct log_message_t {
-	int	log_lvl_id;
-	int	log_lvl_mask;
-	char	thread[LOGGER_MAX_THREAD_NAME];
-	char *	prefix;
-	char *	msg;
+static struct log_message_t _log_msg = {
+	.prefix = _msg_prefix,
+	.msg = _msg,
 };
+
+#define PREFIX_FMT "%0.0s[%s%5.5s%s][%15.15s: %20.20s: %4u]: "
+
+#endif /* !CFG_LOGGER_DEEP_EMBEDDED */
 
 static struct log_level_t _log_levels[] = {
 	{ LOG_LVL_INFO,	   "INFO",  BLUE,    0 },
@@ -81,11 +90,16 @@ static int _build_msg_prefix(struct log_message_t *msg, const char *file, const 
 		return -1;
 	}
 
+#ifndef CFG_LOGGER_NO_MALLOC
 	msg->prefix = malloc(sizeof(char) * LOGGER_MAX_PREFIX_LEN);
 	if (!msg->prefix) {
 		return -1;
 	}
+#endif /* CFG_LOGGER_NO_MALLOC */
 
+#ifdef CFG_LOGGER_DEEP_EMBEDDED
+	(void)for_file;
+#else
 	pthread_getname_np(pthread_self(), msg->thread, LOGGER_MAX_THREAD_NAME);
 	if (for_file) {
 		time_t t = time(NULL);
@@ -96,11 +110,15 @@ static int _build_msg_prefix(struct log_message_t *msg, const char *file, const 
 			 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
 			 msg->thread, _log_levels[msg->log_lvl_id].name, file, function, line);
 	} else {
+
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 		snprintf(msg->prefix, LOGGER_MAX_PREFIX_LEN,
-			 "[%10.10s][%s%5.5s%s][%15.15s: %30.30s: %4u]: ",
-			 msg->thread, _log_levels[msg->log_lvl_id].color,
+			 PREFIX_FMT, msg->thread, _log_levels[msg->log_lvl_id].color,
 			 _log_levels[msg->log_lvl_id].name, RESET, file, function, line);
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	}
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 	return 0;
 }
 
@@ -109,16 +127,18 @@ static int _build_msg_string(struct log_message_t *msg, const char *format, va_l
 	if (!msg) {
 		return -1;
 	}
+#ifndef CFG_LOGGER_NO_MALLOC
 	msg->msg = malloc(sizeof(char) * LOGGER_MAX_MSG_LEN);
 	if (!msg->msg) {
 		return -1;
 	}
-
+#endif
 	vsnprintf(msg->msg, LOGGER_MAX_MSG_LEN, format, va);
 
 	return 0;
 }
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 static bool _check_msg_for_filter(struct log_message_t *msg)
 {
 	/* A filter is enabled */
@@ -130,9 +150,11 @@ static bool _check_msg_for_filter(struct log_message_t *msg)
 	}
 	return true;
 }
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 void _cleanup_log_msg(struct log_message_t *msg)
 {
+#ifndef CFG_LOGGER_NO_MALLOC
 	if (msg) {
 		if (msg->prefix) {
 			free(msg->prefix);
@@ -142,6 +164,7 @@ void _cleanup_log_msg(struct log_message_t *msg)
 		}
 		free(msg);
 	}
+#endif
 }
 
 void _logger_print_and_free_msg(struct log_message_t *msg)
@@ -151,6 +174,7 @@ void _logger_print_and_free_msg(struct log_message_t *msg)
 	_cleanup_log_msg(msg);
 }
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 void _logger_flush_queue()
 {
 	if (!_logger_queue) {
@@ -239,6 +263,7 @@ void *_logger_internal_thread(void *data)
 	_logger_flush_queue();
 	return NULL;
 }
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 void logger_log_line(int log_lvl_mask, char *file, const char *function, const unsigned int line, char *format, ...)
 {
@@ -249,20 +274,25 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 		goto error;
 	}
 
+#ifndef CFG_LOGGER_NO_MALLOC
 	msg = malloc(sizeof(struct log_message_t));
 	if (!msg) {
 		goto error;
 	}
+#else
+	msg = &_log_msg;
+#endif
 
 	msg->log_lvl_id = _mask2id(log_lvl_mask);
 	msg->log_lvl_mask = log_lvl_mask;
 
 	char *canon_file = basename(file);
 	if (!canon_file) {
+#ifndef CFG_LOGGER_NO_MALLOC
 		free(msg);
+#endif
 		goto error;
 	}
-
 
 	int error = _build_msg_prefix(msg, canon_file, function, line, false);
 	if (error < 0) {
@@ -276,6 +306,7 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 	}
 	va_end(va);
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	if (_check_msg_for_filter(msg)) {
 		if (_is_threaded) {
 			error = queue_push(_logger_queue, (void *)msg);
@@ -283,12 +314,13 @@ void logger_log_line(int log_lvl_mask, char *file, const char *function, const u
 				goto error;
 			}
 		} else {
+#endif
 			_logger_print_and_free_msg(msg);
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 		}
 	} else {
 		_cleanup_log_msg(msg);
 	}
-
 	if (_logfile_enabled) {
 		error = _check_and_perform_log_rotate(_logfile, false);
 		if (error < 0) {
@@ -348,6 +380,7 @@ file_end:
 		}
 		_log_counter++;
 	}
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 	va_end(va);
 	_log_levels[_mask2id(log_lvl_mask)].counter++;
 	return;
@@ -356,6 +389,8 @@ error:
 	va_end(va);
 	_cleanup_log_msg(msg);
 }
+
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 
 int logger_enable_file_logging(const char *filename)
 {
@@ -481,6 +516,7 @@ void logger_disable_log_filter()
 	}
 	_current_filter = NULL;
 }
+#endif /*CFG_LOGGER_DEEP_EMBEDDED */
 
 void logger_set_loglevel(int loglvl)
 {
@@ -489,7 +525,7 @@ void logger_set_loglevel(int loglvl)
 
 int logger_init()
 {
-	// Something something thread something
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	int error = logger_enable_threaded_mode();
 
 	if (error < 0) {
@@ -502,15 +538,18 @@ int logger_init()
 		return -1;
 	}
 #endif /* CFG_LOGGER_DEFAULT_LOGFILE_ENABLED */
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 	return 0;
 }
 
 void logger_exit()
 {
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	logger_disable_threaded_mode();
 	logger_disable_file_logging();
 	logger_disable_log_filter();
+#endif
 }
 
 void logger_print_stats(void)

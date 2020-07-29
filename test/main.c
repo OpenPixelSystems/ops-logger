@@ -12,6 +12,7 @@ int main(int argc, char **argv)
 	LOG_TRACE("Test");
 	LOG_WARN("Test");
 
+#ifndef CFG_LOGGER_DEEP_EMBEDDED
 	logger_enable_file_logging("system");
 	LOG_DEBUG("Test");
 	LOG_INFO("Test");
@@ -57,8 +58,6 @@ int main(int argc, char **argv)
 	/* } */
 
 	logger_exit();
-
-	return 0;
-
+#endif /* CFG_LOGGER_DEEP_EMBEDDED */
 
 }
