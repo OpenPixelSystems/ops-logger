@@ -6,6 +6,8 @@
  * @date 2020-08-10
  */
 
+#include <string.h>
+
 #include "logger.h"
 
 #if defined(CFG_LOGGER_SIMPLE_LOGGER) && !defined(CFG_LOGGER_ADV_LOGGER)
@@ -28,6 +30,17 @@ struct log_level_t _log_levels[] = {
 };
 
 static int _current_loglvl = LOG_LVL_EXTRA;
+
+const char *_basename(const char *filename)
+{
+	size_t last_index = 0;
+	for(size_t i = 0; i < strlen(filename); i++) {
+		if (filename[i] == '/') {
+			last_index = i;
+		}
+	}
+	return &filename[last_index + 1];
+}
 
 /**
  * @brief  Convert a LOG mask to an ID in the _log_levels struct
@@ -69,7 +82,7 @@ void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 
 	struct line_info_t linfo = {
 		.lvl	= lvl,
-		.file	= file,
+		.file	= _basename(file),
 		.fn	= fn,
 		.ln	= ln,
 	};
