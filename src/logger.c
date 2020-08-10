@@ -12,7 +12,7 @@
 extern struct logger_driver_t stdio_logger;
 #endif
 
-static struct logger_driver_t *active_drivers[] = {
+static struct logger_driver_t *adrivers[] = {
 #if defined(CFG_LOGGER_SIMPLE_LOGGER) && !defined(CFG_LOGGER_ADV_LOGGER)
 	&stdio_logger,
 #endif
@@ -20,11 +20,11 @@ static struct logger_driver_t *active_drivers[] = {
 };
 
 struct log_level_t _log_levels[] = {
-	{ LOG_LVL_DEBUG, "DEBUG",   MAGENTA, 0	   },
-	{ LOG_LVL_INFO,	 "INFO",    BLUE,    0	   },
-	{ LOG_LVL_OK,	 "OKAY",    GREEN,   0	   },
-	{ LOG_LVL_WARN,	 "WARN",    YELLOW,  0	   },
-	{ LOG_LVL_ERROR, "ERROR",   RED,     0	   },
+	{ LOG_LVL_DEBUG, "DEBUG", MAGENTA, 0 },
+	{ LOG_LVL_INFO,	 "INFO",  BLUE,	   0 },
+	{ LOG_LVL_OK,	 "OKAY",  GREEN,   0 },
+	{ LOG_LVL_WARN,	 "WARN",  YELLOW,  0 },
+	{ LOG_LVL_ERROR, "ERROR", RED,	   0 },
 };
 
 static int _current_loglvl = LOG_LVL_EXTRA;
@@ -46,16 +46,27 @@ int logger_mask2id(int mask)
 	return i;
 }
 
+inline int logger_init()
+{
+	for (int i = 0; adrivers[i] != NULL; i++) {
+		if (adrivers[i]->enabled && adrivers[i]->ops) {
+			if (adrivers[i]->ops->init) {
+				int error = adrivers[i]->ops->init(
+					(void *)adrivers[i]);
+				if (error < 0) {
+					return -1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 		char *fmt, ...)
 {
-	if (!(lvl & _current_loglvl)) {
-		return;
-	}
-
 	va_list va;
 
-	va_start(va, fmt);
 	struct line_info_t linfo = {
 		.lvl	= lvl,
 		.file	= file,
@@ -63,9 +74,36 @@ void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 		.ln	= ln,
 	};
 
-	for (int i = 0; active_drivers[i] != NULL; i++) {
-		active_drivers[i]->ops->write(0, &linfo, fmt, &va);
+	if (!(lvl & _current_loglvl)) {
+		return;
 	}
 
+	va_start(va, fmt);
+	for (int i = 0; adrivers[i] != NULL; i++) {
+		if (adrivers[i]->enabled && adrivers[i]->ops) {
+			if (adrivers[i]->ops->write) {
+				adrivers[i]->ops->write(
+					(void *)adrivers[i],
+					&linfo, fmt, &va);
+			}
+			if (adrivers[i]->ops->flush) {
+				adrivers[i]->ops->flush(
+					(void *)adrivers[i]);
+			}
+		}
+	}
 	va_end(va);
+
+	_log_levels[logger_mask2id(lvl)].counter++;
+}
+
+void logger_close()
+{
+	for (int i = 0; adrivers[i] != NULL; i++) {
+		if (adrivers[i]->enabled && adrivers[i]->ops) {
+			if (adrivers[i]->ops->close) {
+				adrivers[i]->ops->close((void *)adrivers[i]);
+			}
+		}
+	}
 }

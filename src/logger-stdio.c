@@ -42,12 +42,15 @@ static int _printf_wrapper(void *priv, struct line_info_t *linfo, char *fmt,
 }
 
 static const struct logger_ops_t stdio_ops = {
+	.init = NULL,
 	.write	= _printf_wrapper,
 	.read	= NULL,
 	.flush	= NULL,
+	.close = NULL,
 };
 
 struct logger_driver_t stdio_logger = {
+	.enabled	= true,
 	.name		= "stdio",
 	.ops		= &stdio_ops,
 	.priv_data	= NULL,

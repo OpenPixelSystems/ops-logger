@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "colors.h"
 
@@ -46,25 +47,34 @@ struct line_info_t {
 	const int	ln;     //!< Line number
 };
 
+/** Init driver callback */
+typedef int (*init_fn)(void *drv);
+
 /** Write callback function */
-typedef int (*write_fn)(void *priv, struct line_info_t *linfo, char *fmt,
+typedef int (*write_fn)(void *drv, struct line_info_t *linfo, char *fmt,
 			va_list *v);
 
 /** Read callback function */
-typedef int (*read_fn)(int fd, char *buffer);
+typedef int (*read_fn)(void *drv, char *buffer);
 
 /** Flush callback function */
-typedef int (*flush_fn)(int fd);
+typedef int (*flush_fn)(void *drv);
+
+/** Close callback function */
+typedef void (*close_fn)(void *drv);
 
 /** Logger operation struct */
 struct logger_ops_t {
+	init_fn		init;   //!< Init driver
 	write_fn	write;  //!< Write function for driver
 	read_fn		read;   //!< Read function for driver
 	flush_fn	flush;  //!< Flush function for driver
+	close_fn close; //!< Close function for driver
 };
 
 /** Logger driver structure */
 struct logger_driver_t {
+	bool				enabled;                //!< Enable the logger
 	char				name[LOGGER_DRV_NAME];  //!< Driver name
 	const struct logger_ops_t *	ops;                    //!< Logger operations
 	void *				priv_data;              //!< private driver data
@@ -89,6 +99,19 @@ extern struct log_level_t _log_levels[]; //!< Log levels
  * @returns log level id
  */
 int logger_mask2id(int loglvl);
+
+
+/**
+ * @brief  Initial the logger
+ *
+ * @returns -1 if failed
+ */
+int logger_init();
+
+/**
+ * @brief  Close the logger
+ */
+void logger_close();
 
 /**
  * @brief  Write to the logger(s)
