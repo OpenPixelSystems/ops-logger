@@ -27,6 +27,8 @@ struct log_level_t _log_levels[] = {
 	{ LOG_LVL_ERROR,   "ERROR", RED,     0 },
 };
 
+static int _current_loglvl = LOG_LVL_EXTRA;
+
 /**
  * @brief  Convert a LOG mask to an ID in the _log_levels struct
  * @param mask The mask to be converted
@@ -46,6 +48,10 @@ int logger_mask2id(int mask)
 
 void logger_log(const int lvl, const char *file, const char *fn, const int ln, char *fmt, ...)
 {
+	if (!(lvl & _current_loglvl)) {
+		return;
+	}
+
 	va_list va;
 	va_start(va, fmt);
 	struct line_info_t linfo = {

@@ -21,6 +21,19 @@
 #define LOG_LVL_WARN            0x00000008      //!< Warning
 #define LOG_LVL_ERROR           0x00000010      //!< Error
 
+/** All standard Logging */
+#define LOG_LVL_ALL (LOG_LVL_INFO | LOG_LVL_WARN | LOG_LVL_ERROR | LOG_LVL_OK)
+
+/** Acceptable level of logging for production software */
+#define LOG_LVL_PRODUCTION (LOG_LVL_OK | LOG_LVL_WARN | LOG_LVL_ERROR)
+
+/** Extra debugging information */
+#define LOG_LVL_EXTRA (LOG_LVL_ALL | LOG_LVL_DEBUG)
+
+/** No logging at all */
+#define LOG_LVL_NONE 0
+
+
 #define LOGGER_DRV_NAME 16
 #define MAX_STR_LEN 256
 
