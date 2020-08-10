@@ -1,13 +1,12 @@
-#include "logger-v3.h"
+#include "logger.h"
 
-int longer_function_name()
+void longer_function_name()
 {
 	LOG_DEBUG("Long function name test");
 }
 
 int main()
 {
-	int test;
 	LOG_DEBUG("Test");
 	LOG_INFO("Test");
 	LOG_OK("Test");

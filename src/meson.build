@@ -1,6 +1,6 @@
 # loggersrc = [files('logger.c')]
 
-loggerv3_src = [files('logger-v3.c', 'logger-v3-stdio.c')]
+logger_src = [files('logger.c', 'logger-stdio.c')]
 
 # deps = []
 # if meson.is_cross_build() == false
@@ -31,7 +31,7 @@ loggerv3_src = [files('logger-v3.c', 'logger-v3-stdio.c')]
 
 loggerlib = shared_library(
       'loggerlib', # library name
-      loggerv3_src, # source files to be compiled
+      logger_src, # source files to be compiled
       include_directories : inc,
       # dependencies : deps,
       c_args : c_args,

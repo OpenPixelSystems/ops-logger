@@ -10,23 +10,25 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "logger-v3.h"
+#include "logger.h"
 
-char simple_logger_buffer[MAX_STR_LEN + 1] = {0};
+char simple_logger_buffer[MAX_STR_LEN + 1] = { 0 };
 
 #define MAX_HDR_LEN 128
 
 static void _print_header(struct line_info_t *linfo)
 {
 	memset(simple_logger_buffer, 0, MAX_STR_LEN + 1);
-	snprintf(simple_logger_buffer, MAX_HDR_LEN, "[%s%5s%s] (%20s)(%20s @%3d) : ",
-			_log_levels[logger_mask2id(linfo->lvl)].color,
-			_log_levels[logger_mask2id(linfo->lvl)].name,
-			RESET, linfo->file, linfo->fn, linfo->ln);
+	snprintf(simple_logger_buffer, MAX_HDR_LEN,
+		 "[%s%5s%s] (%20s)(%20s @%3d) : ",
+		 _log_levels[logger_mask2id(linfo->lvl)].color,
+		 _log_levels[logger_mask2id(linfo->lvl)].name,
+		 RESET, linfo->file, linfo->fn, linfo->ln);
 	fprintf(stdout, "%s", simple_logger_buffer);
 }
 
-static int _printf_wrapper(void *priv, struct line_info_t *linfo, char *fmt, va_list *v)
+static int _printf_wrapper(void *priv, struct line_info_t *linfo, char *fmt,
+			   va_list *v)
 {
 	(void)priv;
 
@@ -40,13 +42,13 @@ static int _printf_wrapper(void *priv, struct line_info_t *linfo, char *fmt, va_
 }
 
 static const struct logger_ops_t stdio_ops = {
-	.write = _printf_wrapper,
-	.read = NULL,
-	.flush = NULL,
+	.write	= _printf_wrapper,
+	.read	= NULL,
+	.flush	= NULL,
 };
 
 struct logger_driver_t stdio_logger = {
-	.name = "stdio",
-	.ops = &stdio_ops,
-	.priv_data = NULL,
+	.name		= "stdio",
+	.ops		= &stdio_ops,
+	.priv_data	= NULL,
 };
