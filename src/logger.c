@@ -34,7 +34,8 @@ static int _current_loglvl = LOG_LVL_EXTRA;
 const char *_basename(const char *filename)
 {
 	size_t last_index = 0;
-	for(size_t i = 0; i < strlen(filename); i++) {
+
+	for (size_t i = 0; i < strlen(filename); i++) {
 		if (filename[i] == '/') {
 			last_index = i;
 		}

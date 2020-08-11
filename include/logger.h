@@ -69,7 +69,7 @@ struct logger_ops_t {
 	write_fn	write;  //!< Write function for driver
 	read_fn		read;   //!< Read function for driver
 	flush_fn	flush;  //!< Flush function for driver
-	close_fn close; //!< Close function for driver
+	close_fn	close;  //!< Close function for driver
 };
 
 /** Logger driver structure */

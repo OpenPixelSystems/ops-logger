@@ -17,14 +17,18 @@
 struct time_trace_t {
 	clock_t begin;
 	clock_t end;
-	double diff;
-	bool ended;
+	double	diff;
+	bool	ended;
 };
 
 static inline struct time_trace_t *tracer_setup_time_trace(void)
 {
-	struct time_trace_t *t = (struct time_trace_t *)malloc(sizeof(struct time_trace_t));
-	if (!t) return NULL;
+	struct time_trace_t *t =
+		(struct time_trace_t *)malloc(sizeof(struct time_trace_t));
+
+	if (!t) {
+		return NULL;
+	}
 
 	t->begin = clock();
 	return t;
@@ -40,7 +44,7 @@ static inline void tracer_time_trace_end(struct time_trace_t *t)
 static inline void tracer_time_trace_free(struct time_trace_t *t)
 {
 	if (!t->ended) {
-		//WARN user that tracer has not ended
+		// WARN user that tracer has not ended
 	}
 	free(t);
 }

@@ -54,10 +54,9 @@ int main(int argc, char **argv)
 
 	logger_enable_file_logging("system_threaded-10M");
 	/* for(;;) { */
-		/* LOG_ERROR("Test"); */
+	/* LOG_ERROR("Test"); */
 	/* } */
 
 	logger_exit();
 #endif /* CFG_LOGGER_DEEP_EMBEDDED */
-
 }
