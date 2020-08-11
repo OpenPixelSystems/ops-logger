@@ -5,3 +5,6 @@ build
 *.log
 *.swp
 cortex-build
+CMakeFiles
+Makefile
+cmake_install.cmake
