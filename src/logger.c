@@ -10,16 +10,20 @@
 
 #include "logger.h"
 
+#if !defined(CFG_LOGGER_EXTERNAL_DRIVER_CONF)
 #if defined(CFG_LOGGER_SIMPLE_LOGGER) && !defined(CFG_LOGGER_ADV_LOGGER)
 extern struct logger_driver_t stdio_logger;
-#endif
+#endif /* CFG_LOGGER_SIMPLE_LOGGER && !CFG_LOGGER_ADV_LOGGER */
 
 static struct logger_driver_t *adrivers[] = {
 #if defined(CFG_LOGGER_SIMPLE_LOGGER) && !defined(CFG_LOGGER_ADV_LOGGER)
 	&stdio_logger,
-#endif
+#endif /* CFG_LOGGER_SIMPLE_LOGGER && !CFG_LOGGER_ADV_LOGGER */
 	NULL,
 };
+#else /* CFG_LOGGER_EXTERNAL_DRIVER_CONF */
+extern struct logger_driver_t *adrivers[];
+#endif /* CFG_LOGGER_EXTERNAL_DRIVER_CONF */
 
 struct log_level_t _log_levels[] = {
 	{ LOG_LVL_DEBUG, "DEBUG", MAGENTA, 0 },
