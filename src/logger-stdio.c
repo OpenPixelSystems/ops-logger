@@ -20,7 +20,7 @@ static void _print_header(struct line_info_t *linfo)
 {
 	memset(simple_logger_buffer, 0, MAX_STR_LEN + 1);
 	snprintf(simple_logger_buffer, MAX_HDR_LEN,
-		 "[%s%5s%s] (%20s)(%20s @%3d) : ",
+		 "[%s%5s%s] (%20s)(%30s @%3d) : ",
 		 _log_levels[logger_mask2id(linfo->lvl)].color,
 		 _log_levels[logger_mask2id(linfo->lvl)].name,
 		 RESET, linfo->file, linfo->fn, linfo->ln);
