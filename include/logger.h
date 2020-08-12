@@ -1,35 +1,26 @@
 /**
- * @file util/logger.h
- * @brief  Simple logger
+ * @file logger.h
+ * @brief Main include file for logger
  * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
- * @version v2.0
- * @date 2019-06-03
+ * @version v3.0
+ * @date 2020-08-10
  */
 
-#ifndef _LOGGER_H_
-#define _LOGGER_H_
+#ifndef _LOGGER_V3_H_
+#define _LOGGER_V3_H_
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <string.h>
-
-#ifndef CFG_LOGGER_DEEP_EMBEDDED
-#include <pthread.h>
-#include <sys/stat.h>
-
-#include <libgen.h>             /* basename() */
-#endif
 
 #include "colors.h"
 
-#define LOG_LVL_INFO            0x00000001      //!< Info
-#define LOG_LVL_WARN            0x00000002      //!< Warning
-#define LOG_LVL_ERROR           0x00000004      //!< Error
-#define LOG_LVL_DEBUG           0x00000008      //!< Debugging
-#define LOG_LVL_OK              0x00000010      //!< Success
-#define LOG_LVL_TRACING         0x00000020      //!< Tracing
+#define LOG_LVL_DEBUG           0x00000001      //!< Debugging
+#define LOG_LVL_INFO            0x00000002      //!< Info
+#define LOG_LVL_OK              0x00000004      //!< Success
+#define LOG_LVL_WARN            0x00000008      //!< Warning
+#define LOG_LVL_ERROR           0x00000010      //!< Error
 
 /** All standard Logging */
 #define LOG_LVL_ALL (LOG_LVL_INFO | LOG_LVL_WARN | LOG_LVL_ERROR | LOG_LVL_OK)
@@ -38,30 +29,58 @@
 #define LOG_LVL_PRODUCTION (LOG_LVL_OK | LOG_LVL_WARN | LOG_LVL_ERROR)
 
 /** Extra debugging information */
-#define LOG_LVL_EXTRA (LOG_LVL_ALL | LOG_LVL_DEBUG | LOG_LVL_TRACING)
+#define LOG_LVL_EXTRA (LOG_LVL_ALL | LOG_LVL_DEBUG)
 
-/** No logging at all! */
+/** No logging at all */
 #define LOG_LVL_NONE 0
 
-#define LOGGER_MAX_THREAD_NAME 16
-#define LOGGER_MAX_LOGFILE_NAME 64
+/** Max logger name */
+#define LOGGER_DRV_NAME 16
 
+/** Max string length */
+#define MAX_STR_LEN 256
 
-#ifndef CFG_LOGGER_MAX_LOG_SIZE
-#define CFG_LOGGER_MAX_LOG_SIZE 20 /* MB */
-#endif
+struct line_info_t {
+	const int	lvl;    //!< Log level
+	const char *	file;   //!< File string
+	const char *	fn;     //!< Function name
+	const int	ln;     //!< Line number
+};
 
-#ifdef CFG_LOGGER_NO_MALLOC
-#define LOGGER_MAX_PREFIX_LEN 64
-#define LOGGER_MAX_MSG_LEN 128
-#else
-#define LOGGER_MAX_PREFIX_LEN 128
-#define LOGGER_MAX_MSG_LEN 2048
-#endif /* CFG_LOGGER_NO_MALLOC */
+/** Init driver callback */
+typedef int (*init_fn)(void *drv);
 
-/**
- * @brief  Log level definition
- */
+/** Write callback function */
+typedef int (*write_fn)(void *drv, struct line_info_t *linfo, char *fmt,
+			va_list *v);
+
+/** Read callback function */
+typedef int (*read_fn)(void *drv, char *buffer);
+
+/** Flush callback function */
+typedef int (*flush_fn)(void *drv);
+
+/** Close callback function */
+typedef void (*close_fn)(void *drv);
+
+/** Logger operation struct */
+struct logger_ops_t {
+	init_fn		init;   //!< Init driver
+	write_fn	write;  //!< Write function for driver
+	read_fn		read;   //!< Read function for driver
+	flush_fn	flush;  //!< Flush function for driver
+	close_fn	close;  //!< Close function for driver
+};
+
+/** Logger driver structure */
+struct logger_driver_t {
+	bool				enabled;                //!< Enable the logger
+	char				name[LOGGER_DRV_NAME];  //!< Driver name
+	const struct logger_ops_t *	ops;                    //!< Logger operations
+	void *				priv_data;              //!< private driver data
+};
+
+/** brief  Log level definition */
 struct log_level_t {
 	int		mask;           //!< Mask associated with the log level
 	const char *	name;           //!< Log level name. (What will be printed before msg)
@@ -69,82 +88,62 @@ struct log_level_t {
 	int		counter;        //!< Internal counter for number of messages
 };
 
-/**
- * @brief Printf style loggin function
- * @param log_lvl Logging level
- * @param file File name
- * @param function Function name
- * @param line Line number
- * @param format Printf style formating
- * @param ... VA list for format arguments
- */
-void logger_log_line(int log_lvl, char *file, const char *function, const unsigned int line, char *format, ...);
+extern struct log_level_t _log_levels[]; //!< Log levels
+
 
 /**
- * @brief  Enable file logging
- * @param filename File to be used for logging
- * @returns  -1 if failed otherwise 0
+ * @brief  Convert logger mask to id in _log_levels array
+ *
+ * @param loglvl Log level mask
+ *
+ * @returns log level id
  */
-int logger_enable_file_logging(const char *filename);
+int logger_mask2id(int loglvl);
+
 
 /**
- * @brief  Disable file logging
- */
-void logger_disable_file_logging();
-
-/**
- * @brief Enable/Disable threaded logging
- * @returns -1 if failed , 0 if successful
- */
-int logger_enable_threaded_mode();
-
-/**
- * @brief Enable/Disable threaded logging
- * @returns -1 if failed , 0 if successful
- */
-void logger_disable_threaded_mode();
-
-/**
- * @brief Enable a filter on the logging
- * @param filter Filter string
- * @note An empty string (\"\") will clear the filter
- * @returns -1 if failed , 0 if successful
- */
-int logger_enable_log_filter(char *filter);
-
-/**
- * @brief Clear the filter of the logger
- */
-void logger_disable_log_filter();
-
-/**
- * @brief Set logging level
- * Set the current loglevel of the program
- * @param loglvl Level that will be set
- */
-void logger_set_loglevel(int loglvl);
-
-/**
- * @brief Initialize the logger
- * Function mainly used to initialize threaded mode
- * (If compiled with threaded support)
+ * @brief  Initial the logger
+ *
+ * @returns -1 if failed
  */
 int logger_init();
 
 /**
- * @brief Perform proper cleanup op logger
+ * @brief  Close the logger
  */
-void logger_exit();
+void logger_close();
 
 /**
- * @brief Print the logger statistics
+ * @brief  Write to the logger(s)
+ *
+ * @param lvl Log level
+ * @param file Current file name
+ * @param fn Current function name
+ * @param ln Current line number
+ * @param fmt string va format
+ * @param ... va_args
  */
-void logger_print_stats(void);
+void logger_log(const int lvl, const char *file, const char *fn, const int ln,
+		char *fmt, ...);
 
-/**
- * @brief Get number of message for a specific level
- * @param loglvl Level that will be set
- */
-int logger_get_nb_message_loglevel(int loglvl);
+#define LOG_DEBUG(msg, ...) \
+	logger_log(LOG_LVL_DEBUG, __FILE__, __FUNCTION__, __LINE__, msg, \
+		   ## __VA_ARGS__)
 
-#endif
+#define LOG_INFO(msg, ...) \
+	logger_log(LOG_LVL_INFO, __FILE__, __FUNCTION__, __LINE__, msg, \
+		   ## __VA_ARGS__)
+
+#define LOG_OK(msg, ...) \
+	logger_log(LOG_LVL_OK, __FILE__, __FUNCTION__, __LINE__, msg, \
+		   ## __VA_ARGS__)
+
+#define LOG_WARN(msg, ...) \
+	logger_log(LOG_LVL_WARN, __FILE__, __FUNCTION__, __LINE__, msg, \
+		   ## __VA_ARGS__)
+
+#define LOG_ERROR(msg, ...) \
+	logger_log(LOG_LVL_ERROR, __FILE__, __FUNCTION__, __LINE__, msg, \
+		   ## __VA_ARGS__)
+
+#endif /* _LOGGER_V3_H_ */

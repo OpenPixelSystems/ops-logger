@@ -22,6 +22,7 @@ int queue_push(struct queue_t *q, void *data)
 	}
 
 	struct queue_elm_t *new = malloc(sizeof(struct queue_elm_t));
+
 	if (!new) {
 		return -1;
 	}
