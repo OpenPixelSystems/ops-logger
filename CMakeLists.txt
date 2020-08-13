@@ -1,6 +1,16 @@
 set(LOGGER_SRC
 	${CMAKE_CURRENT_LIST_DIR}/src/logger.c
-	${CMAKE_CURRENT_LIST_DIR}/src/logger-stdio.c
+)
+
+if (DEFINED SEMIHOSTING)
+	set(LOGGER_SRC
+		${LOGGER_SRC}
+		${CMAKE_CURRENT_LIST_DIR}/src/logger-stdio.c
+	)
+endif()
+
+set(LOGGER_SRC
+	${LOGGER_SRC}
 	PARENT_SCOPE
 )
 
