@@ -18,13 +18,17 @@
 #define MAX_LOG_LEN 128
 
 struct mem_ctxt_t {
-	uint32_t * 	mem_base;
-	uint32_t *	mem_start;
-	uint32_t *	mem_end;
-	uint32_t *	curr_offset;
-	uint32_t	count;
+	uint32_t * 	mem_base; //!< Base address of Shared memory
+	uint32_t *	mem_start; //!< Start of logging region (after config struct)
+	uint32_t *	mem_end; //!< End of shared memory
+	uint32_t *	curr_offset; //!< Current log pointer
+	uint32_t	count; //!< Number of messages logged
 };
 
+
+/**
+ * @brief  Default logger context struct
+ */
 static struct mem_ctxt_t _default_ctxt = {
 	.mem_base	= (uint32_t *)&__ssram_start__,
 	.mem_start	= (uint32_t *)&__ssram_start__,
@@ -33,26 +37,43 @@ static struct mem_ctxt_t _default_ctxt = {
 	.count		= 0,
 };
 
+/**
+ * @brief Wipe the configuration region
+ *
+ * @param start Start of the configuration region
+ * @param end End of the configuration region
+ */
 static void _wipe_config_region(uint32_t *start, uint32_t *end)
 {
 	uint32_t *curr = start;
 
 	while (curr != end) {
-		*curr = 0xFFFFFFFF; //!< wipe data
-		curr++;
+		*curr++ = 0xFFFFFFFF; //!< wipe data
 	}
 }
 
+/**
+ * @brief Wipe the logging region
+ *
+ * @param start Start of the logging region
+ * @param end End of the logging region
+ */
 static void _wipe_old_logging(uint32_t *start, uint32_t *end)
 {
 	uint32_t *curr = start;
 
 	while (curr != end) {
-		*curr = 0x0; //!< wipe data
-		curr++;
+		*curr++ = 0x0; //!< wipe data
 	}
 }
 
+/**
+ * @brief  Initialize the memory logger if in bootloader mode
+ *
+ * @param drv Driver which will be initialized
+ *
+ * @returns  -1 if failed otherwise 0
+ */
 static int _init_bootloader_mem(void *drv)
 {
 	struct logger_driver_t *driver = (struct logger_driver_t *)drv;
@@ -76,6 +97,13 @@ static int _init_bootloader_mem(void *drv)
 	return 0;
 }
 
+/**
+ * @brief  Initialize the memory logger if in application mode
+ *
+ * @param drv Driver which will be initialized
+ *
+ * @returns  -1 if failed otherwise 0
+ */
 static int _init_application_mem(void *drv)
 {
 	struct logger_driver_t *driver = (struct logger_driver_t *)drv;
@@ -89,6 +117,13 @@ static int _init_application_mem(void *drv)
 	return 0;
 }
 
+/**
+ * @brief Write to memory
+ *
+ * @param drv Driver which will be written
+ *
+ * @returns  -1 if failed otherwise 0
+ */
 static int _write_mem(void *drv, struct line_info_t *linfo, char *fmt,
 		      va_list *v)
 {
