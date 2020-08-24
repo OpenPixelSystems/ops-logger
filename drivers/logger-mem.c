@@ -18,11 +18,11 @@
 #define MAX_LOG_LEN 128
 
 struct mem_ctxt_t {
-	uint32_t * 	mem_base; //!< Base address of Shared memory
-	uint32_t *	mem_start; //!< Start of logging region (after config struct)
-	uint32_t *	mem_end; //!< End of shared memory
-	uint32_t *	curr_offset; //!< Current log pointer
-	uint32_t	count; //!< Number of messages logged
+	uint32_t *	mem_base;       //!< Base address of Shared memory
+	uint32_t *	mem_start;      //!< Start of logging region (after config struct)
+	uint32_t *	mem_end;        //!< End of shared memory
+	uint32_t *	curr_offset;    //!< Current log pointer
+	uint32_t	count;          //!< Number of messages logged
 };
 
 
@@ -83,6 +83,7 @@ static int _init_bootloader_mem(void *drv)
 	}
 
 	struct mem_ctxt_t *ctxt = (struct mem_ctxt_t *)&__ssram_start__;
+
 	_wipe_config_region(ctxt->mem_base, ctxt->mem_start);
 
 	*ctxt = _default_ctxt;
@@ -107,11 +108,13 @@ static int _init_bootloader_mem(void *drv)
 static int _init_application_mem(void *drv)
 {
 	struct logger_driver_t *driver = (struct logger_driver_t *)drv;
+
 	if (!driver) {
 		return -1;
 	}
 
 	struct mem_ctxt_t *ctxt = (struct mem_ctxt_t *)&__ssram_start__;
+
 	driver->priv_data = ctxt;
 
 	return 0;
@@ -138,13 +141,15 @@ static int _write_mem(void *drv, struct line_info_t *linfo, char *fmt,
 
 	*ctxt->curr_offset = __builtin_bswap32(ctxt->count);
 
-	char *mem_reg = (char*)ctxt->curr_offset;
+	char *mem_reg = (char *)ctxt->curr_offset;
+
 	vsnprintf(&mem_reg[4], MAX_LOG_LEN, fmt, *v);
 
-	if (ctxt->curr_offset == ctxt->mem_end)
+	if (ctxt->curr_offset == ctxt->mem_end) {
 		ctxt->curr_offset = ctxt->mem_start;
-	else
+	} else {
 		ctxt->curr_offset += (MAX_LOG_LEN / sizeof(uint32_t));
+	}
 	ctxt->count++;
 
 	return 0;

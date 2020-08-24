@@ -9,6 +9,12 @@ if (DEFINED SEMIHOSTING)
 	)
 endif()
 
+set(LOGGER_NATIVE_SRC
+	${CMAKE_CURRENT_LIST_DIR}/src/logger.c
+	${CMAKE_CURRENT_LIST_DIR}/src/logger-stdio.c
+	PARENT_SCOPE
+)
+
 set(LOGGER_SRC
 	${LOGGER_SRC}
 	PARENT_SCOPE
