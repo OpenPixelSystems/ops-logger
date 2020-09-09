@@ -18,9 +18,3 @@ c_args += get_option('buildtype') == 'release' ? ['-DNDEBUG'] : ['-DDEBUG=1', '-
 
 logger_includes = include_directories(['./include'])
 logger_srcs = files(['./src/logger.c', './src/logger-stdio.c'])
-
-liblogger = static_library('logger', logger_srcs, include_directories : logger_includes,
-			   c_args : c_args, link_args : link_args,
-			   install : false)
-
-liblogger_dep = declare_dependency(include_directories: logger_includes, link_with: liblogger)
