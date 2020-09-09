@@ -1,9 +1,4 @@
-logger_src = [files('logger.c', 'logger-stdio.c')]
-
-if meson.is_cross_build()
-  c_args += meson.get_cross_property('cross_args')
-  link_args += meson.get_cross_property('cross_link_args')
-endif
+logger_src = files(['logger.c', 'logger-stdio.c'])
 
 # loggerlib = shared_library(
 #       'logger_shared', # library name
