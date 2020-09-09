@@ -1,21 +1,26 @@
-project('logger','c')
-inc = include_directories('include')
+# OPS Logger Lib
 
-add_project_arguments(['-DCFG_LOGGER_SIMPLE_LOGGER'], language: 'c')
+project('logger', 'c', version : '3.0.1')
 
 c_args = []
 link_args = []
+
+if meson.is_subproject()
+  c_args += '-DCFG_LOGGER_EXTERNAL_DRIVER_CONF'
+endif
 
 if meson.is_cross_build()
   c_args += meson.get_cross_property('cross_args')
   link_args += meson.get_cross_property('cross_link_args')
 endif
 
-c_args += get_option('buildtype') == 'release' ? '-DNDEBUG' : '-DDEBUG=1 -g -ggdb'
+c_args += get_option('buildtype') == 'release' ? ['-DNDEBUG'] : ['-DDEBUG=1', '-g', '-ggdb']
 
-subdir('./src')
+logger_includes = include_directories(['./include'])
+logger_srcs = files(['./src/logger.c', './src/logger-stdio.c'])
 
-liblogger = static_library('logger', logger_src, include_directories : inc, c_args : c_args,
-  link_args : link_args, install : false)
+liblogger = static_library('logger', logger_srcs, include_directories : logger_includes,
+			   c_args : c_args, link_args : link_args,
+			   install : false)
 
-logger_dep = declare_dependency(include_directories: inc, link_with: liblogger)
+liblogger_dep = declare_dependency(include_directories: logger_includes, link_with: liblogger)
