@@ -51,8 +51,7 @@ struct line_info_t {
 typedef int (*init_fn)(void *drv);
 
 /** Write callback function */
-typedef int (*write_fn)(void *drv, struct line_info_t *linfo, char *fmt,
-			va_list *v);
+typedef int (*write_fn)(void *drv, struct line_info_t *linfo, char *fmt, va_list *v);
 
 /** Read callback function */
 typedef int (*read_fn)(void *drv, char *buffer);
@@ -123,8 +122,7 @@ void logger_close();
  * @param fmt string va format
  * @param ... va_args
  */
-void logger_log(const int lvl, const char *file, const char *fn, const int ln,
-		char *fmt, ...);
+void logger_log(const int lvl, const char *file, const char *fn, const int ln, char *fmt, ...);
 
 #define LOG_DEBUG(msg, ...) \
 	logger_log(LOG_LVL_DEBUG, __FILE__, __FUNCTION__, __LINE__, msg, \
