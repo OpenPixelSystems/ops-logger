@@ -80,6 +80,17 @@ inline int logger_init()
 	return 0;
 }
 
+int logger_get_loglvl()
+{
+	return _current_loglvl;
+}
+
+void logger_set_loglvl(int loglvl)
+{
+	LOG_INFO("Changing log level");
+	_current_loglvl = loglvl;
+}
+
 void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 		char *fmt, ...)
 {
