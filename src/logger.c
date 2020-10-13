@@ -1,5 +1,5 @@
 /**
- * @file logger-v3.c
+ * @file logger.c
  * @brief  Logger V3
  * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
  * @version v3.0
@@ -47,11 +47,6 @@ const char *_basename(const char *filename)
 	return &filename[last_index + 1];
 }
 
-/**
- * @brief  Convert a LOG mask to an ID in the _log_levels struct
- * @param mask The mask to be converted
- * @returns  A valid id with then _log_levels struct
- */
 int logger_mask2id(int mask)
 {
 	int n = 1;

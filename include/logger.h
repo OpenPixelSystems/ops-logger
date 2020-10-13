@@ -93,11 +93,11 @@ extern struct log_level_t _log_levels[]; //!< Log levels
 /**
  * @brief  Convert logger mask to id in _log_levels array
  *
- * @param loglvl Log level mask
+ * @param mask Log level mask
  *
  * @returns log level id
  */
-int logger_mask2id(int loglvl);
+int logger_mask2id(int mask);
 
 /**
  * @brief  Initial the logger

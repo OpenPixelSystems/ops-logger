@@ -1,5 +1,5 @@
 /**
- * @file logger-stdio.h
+ * @file logger-stdio.c
  * @brief  Simple stdio driver for logger
  *
  * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
