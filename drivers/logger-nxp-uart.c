@@ -1,5 +1,5 @@
 /**
- * @file logger-uart.c
+ * @file logger-nxp-uart.c
  * @brief  UART driver for logger
  * @author Bram Vlerick <bram.vlerick@openpixelsystems.org>
  * @version v0.1
