@@ -31,6 +31,7 @@ struct log_level_t _log_levels[] = {
 	{ LOG_LVL_OK,	 "OKAY",  GREEN,   0 },
 	{ LOG_LVL_WARN,	 "WARN",  YELLOW,  0 },
 	{ LOG_LVL_ERROR, "ERROR", RED,	   0 },
+	{ LOG_LVL_RAW, 	 "RAW",   RESET,    0},
 };
 
 static int _current_loglvl = LOG_LVL_EXTRA;
