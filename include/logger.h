@@ -21,13 +21,15 @@
 #define LOG_LVL_OK              0x00000004      //!< Success
 #define LOG_LVL_WARN            0x00000008      //!< Warning
 #define LOG_LVL_ERROR           0x00000010      //!< Error
-#define LOG_LVL_RAW 		0x10000000 	//!< Raw loggin
+#define LOG_LVL_RAW             0x10000000      //!< Raw loggin
 
 /** All standard Logging */
-#define LOG_LVL_ALL (LOG_LVL_INFO | LOG_LVL_WARN | LOG_LVL_ERROR | LOG_LVL_OK | LOG_LVL_RAW)
+#define LOG_LVL_ALL (LOG_LVL_INFO | LOG_LVL_WARN | LOG_LVL_ERROR | LOG_LVL_OK | \
+		     LOG_LVL_RAW)
 
 /** Acceptable level of logging for production software */
-#define LOG_LVL_PRODUCTION (LOG_LVL_OK | LOG_LVL_WARN | LOG_LVL_ERROR | LOG_LVL_RAW)
+#define LOG_LVL_PRODUCTION (LOG_LVL_OK | LOG_LVL_WARN | LOG_LVL_ERROR | \
+			    LOG_LVL_RAW)
 
 /** Extra debugging information */
 #define LOG_LVL_EXTRA (LOG_LVL_ALL | LOG_LVL_DEBUG | LOG_LVL_RAW)
