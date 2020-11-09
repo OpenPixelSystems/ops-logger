@@ -32,7 +32,9 @@ static int _printf_wrapper(void *priv, struct line_info_t *linfo, char *fmt,
 {
 	(void)priv;
 
-	_print_header(linfo);
+	if (linfo->lvl != LOG_LVL_RAW) {
+		_print_header(linfo);
+	}
 
 	memset(simple_logger_buffer, 0, MAX_STR_LEN + 1);
 	vsnprintf(simple_logger_buffer, MAX_STR_LEN, fmt, *v);
