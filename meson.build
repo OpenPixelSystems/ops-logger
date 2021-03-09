@@ -19,4 +19,6 @@ c_args += get_option('buildtype') == 'release' ? ['-DNDEBUG'] : ['-DDEBUG=1', '-
 logger_includes = include_directories(['./include'])
 logger_srcs = files(['./src/logger.c', './src/logger-stdio.c'])
 
-subdir('test')
+if not meson.is_cross_build()
+  subdir('test')
+endif
