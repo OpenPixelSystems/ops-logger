@@ -140,32 +140,30 @@ void logger_close();
  */
 void logger_log(const int lvl, const char *file, const char *fn, const int ln, char *fmt, ...);
 
-#if !defined (CFG_LOGGER_HARD_DISABLE_DEBUG)
-#define LOG_DEBUG(msg, ...) \
-	logger_log(LOG_LVL_DEBUG, __FILE__, __FUNCTION__, __LINE__, msg, \
-		   ## __VA_ARGS__)
 #define LOG_OK(msg, ...)                                                       \
   logger_log(LOG_LVL_OK, __FILE__, __FUNCTION__, __LINE__, msg, ##__VA_ARGS__)
-
-#define LOG_INFO(msg, ...)                                                     \
-  logger_log(LOG_LVL_INFO, __FILE__, __FUNCTION__, __LINE__, msg, ##__VA_ARGS__)
 
 #define LOG_WARN(msg, ...)                                                     \
   logger_log(LOG_LVL_WARN, __FILE__, __FUNCTION__, __LINE__, msg, ##__VA_ARGS__)
 
-#define LOG_RAW(msg, ...)                                                      \
-  logger_log(LOG_LVL_RAW, __FILE__, __FUNCTION__, __LINE__, msg, ##__VA_ARGS__)
-
 #define LOG_ERROR(msg, ...)                                                    \
   logger_log(LOG_LVL_ERROR, __FILE__, __FUNCTION__, __LINE__, msg,             \
              ##__VA_ARGS__)
+
+#if !defined (CFG_LOGGER_HARD_DISABLE_DEBUG)
+#define LOG_DEBUG(msg, ...) \
+	logger_log(LOG_LVL_DEBUG, __FILE__, __FUNCTION__, __LINE__, msg, \
+		   ## __VA_ARGS__)
+
+#define LOG_RAW(msg, ...)                                                      \
+  logger_log(LOG_LVL_RAW, __FILE__, __FUNCTION__, __LINE__, msg, ##__VA_ARGS__)
+
+#define LOG_INFO(msg, ...)                                                     \
+  logger_log(LOG_LVL_INFO, __FILE__, __FUNCTION__, __LINE__, msg, ##__VA_ARGS__)
 #else
-#define LOG_DEBUG(msg, ...) while(0){};
-#define LOG_OK(msg, ...) while(0){};
 #define LOG_INFO(msg,...)while(0){};
-#define LOG_WARN(msg,...)while(0){};
-#define LOG_RAW(msg,...)while(0){};
-#define LOG_ERROR(msg, ...)while(0){};
+#define LOG_DEBUG(msg,...)while(0){};
+#define LOG_RAW(msg, ...)while(0){};
 #endif /* CFG_LOGGER_HARD_DISABLE_DEBUG */
 
 #endif /* _LOGGER_V3_H_ */
