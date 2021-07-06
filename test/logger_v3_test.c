@@ -17,5 +17,6 @@ int main()
 	LOG_RAW("Raw Logging");
 
 	longer_function_name();
+	logger_flush();
 	logger_close();
 }

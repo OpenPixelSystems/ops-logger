@@ -6,8 +6,10 @@
  * @date 2020-08-10
  */
 
+#include <stdio.h>
 #include <string.h>
 
+#include "cbuffer.h"
 #include "logger.h"
 
 #if !defined(CFG_LOGGER_EXTERNAL_DRIVER_CONF)
@@ -60,13 +62,22 @@ int logger_mask2id(int mask)
 	return i;
 }
 
+struct cbuffer_t *_cbuf;
+char *strings[CFG_RING_NR_ELEMS];
+
 inline int logger_init()
 {
+	_cbuf = cbuffer_init_cbuffer(CFG_RING_NR_ELEMS);
+	for (int i = 0; i < CFG_RING_NR_ELEMS; i++) {
+		strings[i] = malloc((MAX_STR_LEN + 1) * sizeof(char));
+		cbuffer_set_element(_cbuf, i, strings[i]);
+	}
+
 	for (int i = 0; adrivers[i] != NULL; i++) {
 		if (adrivers[i]->enabled && adrivers[i]->ops) {
 			if (adrivers[i]->ops->init) {
 				int error = adrivers[i]->ops->init(
-					(void *)adrivers[i]);
+						(void *)adrivers[i]);
 				if (error < 0) {
 					return -1;
 				}
@@ -103,27 +114,60 @@ void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 		return;
 	}
 
-	va_start(va, fmt);
-	for (int i = 0; adrivers[i] != NULL; i++) {
-		if (adrivers[i]->enabled && adrivers[i]->ops) {
-			if (adrivers[i]->ops->write) {
-				adrivers[i]->ops->write(
-					(void *)adrivers[i],
-					&linfo, fmt, &va);
-			}
-			if (adrivers[i]->ops->flush) {
-				adrivers[i]->ops->flush(
-					(void *)adrivers[i]);
-			}
-		}
+
+	char *str = NULL;
+	if (lvl != LOG_LVL_RAW) {
+		str = cbuffer_get_write_pointer(_cbuf);
+		memset(str, 0, MAX_STR_LEN + 1);
+		snprintf(str, 128,
+				"[%s%5s%s] (%20s)(%30s @%3d) : ",
+				_log_levels[logger_mask2id(linfo.lvl)].color,
+				_log_levels[logger_mask2id(linfo.lvl)].name,
+				RESET, linfo.file, linfo.fn, linfo.ln);
+		cbuffer_signal_element_written(_cbuf);
 	}
+
+	va_start(va, fmt);
+	str = cbuffer_get_write_pointer(_cbuf);
+	memset(str, 0, MAX_STR_LEN + 1);
+	vsnprintf(str, MAX_STR_LEN, fmt, va);
+	cbuffer_signal_element_written(_cbuf);
+
 	va_end(va);
 
+	str = cbuffer_get_write_pointer(_cbuf);
+	memset(str, 0, MAX_STR_LEN + 1);
+	snprintf(str, MAX_STR_LEN, "\r\n");
+	cbuffer_signal_element_written(_cbuf);
 	_log_levels[logger_mask2id(lvl)].counter++;
+}
+
+void logger_flush()
+{
+	char *str = NULL;
+	while ((str = cbuffer_get_read_pointer(_cbuf)) != NULL) {
+
+		for (int i = 0; adrivers[i] != NULL; i++) {
+			if (adrivers[i]->enabled && adrivers[i]->ops) {
+				if (adrivers[i]->ops->write) {
+					adrivers[i]->ops->write(
+							(void *)adrivers[i], str);
+				}
+				if (adrivers[i]->ops->flush) {
+					adrivers[i]->ops->flush(
+							(void *)adrivers[i]);
+				}
+			}
+		}
+		cbuffer_signal_element_read(_cbuf);
+	}
 }
 
 void logger_close()
 {
+	if (_cbuf) {
+		cbuffer_destroy_cbuffer(_cbuf);
+	}
 	for (int i = 0; adrivers[i] != NULL; i++) {
 		if (adrivers[i]->enabled && adrivers[i]->ops) {
 			if (adrivers[i]->ops->close) {

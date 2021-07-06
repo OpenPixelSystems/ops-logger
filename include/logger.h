@@ -16,6 +16,8 @@
 
 #include "colors.h"
 
+#define CFG_RING_NR_ELEMS 100
+
 #define LOG_LVL_DEBUG           0x00000001      //!< Debugging
 #define LOG_LVL_INFO            0x00000002      //!< Info
 #define LOG_LVL_OK              0x00000004      //!< Success
@@ -54,7 +56,7 @@ struct line_info_t {
 typedef int (*init_fn)(void *drv);
 
 /** Write callback function */
-typedef int (*write_fn)(void *drv, struct line_info_t *linfo, char *fmt, va_list *v);
+typedef int (*write_fn)(void *drv, char *str);
 
 /** Read callback function */
 typedef int (*read_fn)(void *drv, char *buffer);
@@ -122,6 +124,8 @@ void logger_set_loglvl(int loglvl);
  * @returns   returns the current log level
  */
 int logger_get_loglvl();
+
+void logger_flush();
 
 /**
  * @brief  Close the logger

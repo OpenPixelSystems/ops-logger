@@ -15,9 +15,10 @@ if meson.is_cross_build()
 endif
 
 c_args += get_option('buildtype') == 'release' ? ['-DNDEBUG'] : ['-DDEBUG=1', '-g', '-ggdb']
+c_args += '-DCFG_RING_ENABLED'
 
 logger_includes = include_directories(['./include'])
-logger_srcs = files(['./src/logger.c', './src/logger-stdio.c'])
+logger_srcs = files(['./src/logger.c', './src/logger-stdio.c'], './src/cbuffer.c')
 
 if not meson.is_cross_build()
   subdir('test')
