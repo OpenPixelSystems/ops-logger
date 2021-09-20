@@ -50,7 +50,7 @@
  * @brief Cbuffer data structure
  */
 struct cbuffer_t {
-	uint32_t	nr_elements;            //!< Number of elements available
+	int	nr_elements;            //!< Number of elements available
 	atomic_int	current_nr_elements;    //!< Current Number of elements
 
 	void **		rp;                     //!< Current read pointer
@@ -224,7 +224,7 @@ int cbuffer_signal_element_written(struct cbuffer_t *cbuf);
 
 void cbuffer_flush(struct cbuffer_t *cbuf);
 
-static inline int cbuffer_set_element(struct cbuffer_t *cbuf, size_t index, void *element)
+static inline int cbuffer_set_element(struct cbuffer_t *cbuf, ssize_t index, void *element)
 {
 	if (!cbuf) {
 		return -1;
@@ -239,7 +239,7 @@ static inline int cbuffer_set_element(struct cbuffer_t *cbuf, size_t index, void
 	return 0;
 }
 
-static inline void *cbuffer_get_element(struct cbuffer_t *cbuf, size_t index)
+static inline void *cbuffer_get_element(struct cbuffer_t *cbuf, ssize_t index)
 {
 	if (!cbuf) {
 		return NULL;
