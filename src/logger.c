@@ -129,6 +129,7 @@ void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 
 	va_start(va, fmt);
 	str = cbuffer_get_write_pointer(_cbuf);
+	if (!str) goto error;
 	memset(str, 0, MAX_STR_LEN + 1);
 	vsnprintf(str, MAX_STR_LEN, fmt, va);
 	cbuffer_signal_element_written(_cbuf);
@@ -136,10 +137,18 @@ void logger_log(const int lvl, const char *file, const char *fn, const int ln,
 	va_end(va);
 
 	str = cbuffer_get_write_pointer(_cbuf);
+	if (!str) goto error;
+
 	memset(str, 0, MAX_STR_LEN + 1);
 	snprintf(str, MAX_STR_LEN, "\r\n");
 	cbuffer_signal_element_written(_cbuf);
 	_log_levels[logger_mask2id(lvl)].counter++;
+
+#ifdef UNIT_TEST
+	logger_flush();
+#endif
+error:
+	va_end(va);
 }
 
 void logger_flush()
